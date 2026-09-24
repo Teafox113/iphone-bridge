@@ -6,6 +6,12 @@
 
 ## 使用介面截圖
 
+### Windows 桌面
+
+<img src="docs/screenshots/windows-clean.png" alt="Windows 桌面接收介面" width="580">
+
+### 手機端四種皮膚
+
 以下為手機端連線後、等待傳送時的介面示意；Windows 與手機網頁可切換相同的四種皮膚。
 
 | 01 清爽原生 | 02 深色工作台 |
