@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RestoreConfigFile>$(MSBuildProjectDirectory)\..\NuGet.Config</RestoreConfigFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
+    <EmbeddedResource Include="..\web\index.html" Link="wwwroot\index.html" LogicalName="IPhoneBridge.Windows.wwwroot.index.html" />
+  </ItemGroup>
+
+</Project>

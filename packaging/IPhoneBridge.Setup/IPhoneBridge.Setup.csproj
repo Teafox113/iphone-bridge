@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RestoreConfigFile>$(MSBuildProjectDirectory)\..\..\NuGet.Config</RestoreConfigFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(AppPayloadPath)" LogicalName="IPhoneBridge.Setup.Payload.IPhoneBridge.Windows.exe" />
+    <EmbeddedResource Include="$(AppNoticesPath)" LogicalName="IPhoneBridge.Setup.Payload.third-party-notices.txt" />
+    <EmbeddedResource Include="..\uninstall.ps1" LogicalName="IPhoneBridge.Setup.Payload.uninstall.ps1" />
+  </ItemGroup>
+
+</Project>

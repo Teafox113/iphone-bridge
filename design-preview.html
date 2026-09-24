@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f6fb">
+  <title>iPhone Bridge｜風格提案</title>
+  <style>
+    :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif; color: #18243b; background: #f2f5fa; font-synthesis: none; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 15% 2%, #e6efff 0, transparent 38%), #f4f6fa; }
+    button { font: inherit; }
+    .shell { width: min(1120px, 100% - 40px); margin: 0 auto; padding: 38px 0 64px; }
+    .topline { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:54px; }
+    .brand { display:flex; align-items:center; gap:11px; color:#17243c; font-size:15px; font-weight:750; letter-spacing:-.02em; }
+    .brand-mark { display:grid; place-items:center; width:34px; height:34px; border-radius:11px; color:white; background:#356cf6; box-shadow:0 5px 12px #356cf633; font-size:16px; }
+    .version { color:#738096; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+    .intro { max-width:670px; margin:0 auto 31px; text-align:center; }
+    .eyebrow { color:#5275bd; font-size:11px; font-weight:750; letter-spacing:.16em; text-transform:uppercase; }
+    h1 { margin:11px 0 10px; color:#18243b; font-size:clamp(28px, 4vw, 40px); letter-spacing:-.055em; line-height:1.12; }
+    .intro p { margin:0; color:#758198; font-size:14px; line-height:1.7; }
+    .choices { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin:27px 0 32px; }
+    .choice { display:flex; align-items:center; gap:9px; padding:10px 14px; border:1px solid #e0e6ef; border-radius:999px; color:#66748b; background:#ffffffb8; cursor:pointer; transition:.2s ease; }
+    .choice:hover { transform:translateY(-1px); border-color:#bdc9dd; }
+    .choice[aria-pressed="true"] { border-color:#b7c9ff; color:#2659d9; background:#edf2ff; box-shadow:0 3px 10px #254e9610; }
+    .swatch { width:9px; height:9px; border-radius:50%; background:#4775f5; }
+    .choice[data-theme="studio"] .swatch { background:#57d7bd; }
+    .choice[data-theme="warm"] .swatch { background:#709365; }
+    .choice[data-theme="gba"] .swatch { background:#bc8f35; }
+    .choice strong { font-size:13px; font-weight:700; }
+    .choice small { color:#8b96a8; font-size:11px; }
+    .stage { display:grid; grid-template-columns:minmax(250px, 1fr) minmax(320px, 420px) minmax(250px, 1fr); align-items:center; gap:34px; }
+    .side-note { padding:20px 0; }
+    .side-note .number { color:#aab4c4; font-size:11px; font-weight:750; letter-spacing:.12em; }
+    .side-note h2 { max-width:230px; margin:12px 0 9px; color:#23314a; font-size:21px; line-height:1.3; letter-spacing:-.035em; }
+    .side-note p { max-width:250px; margin:0; color:#78859a; font-size:13px; line-height:1.75; }
+    .swatches { display:flex; gap:6px; margin-top:20px; }
+    .swatches i { display:block; width:25px; height:7px; border-radius:8px; background:#4775f5; }
+    .swatches i:nth-child(2) { opacity:.55; }
+    .swatches i:nth-child(3) { opacity:.25; }
+    .device { padding:9px; border:1px solid #d9e0e9; border-radius:35px; background:#fff; box-shadow:0 28px 80px #25334d1a, 0 4px 12px #25334d0b; }
+    .screen { min-height:695px; overflow:hidden; border-radius:27px; background:var(--paper); color:var(--ink); transition:background .25s,color .25s; }
+    .screen[data-theme="clean"] { --paper:#fff; --ink:#1c2941; --muted:#7e899d; --line:#e9edf3; --soft:#f5f7fb; --accent:#356cf6; --accent-soft:#edf2ff; --good:#2f9c7a; --panel:#fff; }
+    .screen[data-theme="studio"] { --paper:#10151c; --ink:#f1f4f6; --muted:#9da9b7; --line:#28313b; --soft:#171f28; --accent:#59d9bf; --accent-soft:#15332f; --good:#59d9bf; --panel:#141b23; }
+    .screen[data-theme="warm"] { --paper:#f8f6f1; --ink:#26372e; --muted:#788177; --line:#e6e4dc; --soft:#f0eee7; --accent:#547b55; --accent-soft:#e8efe4; --good:#63845b; --panel:#fffefa; }
+    .screen[data-theme="gba"] { --paper:#a8b995; --ink:#202c25; --muted:#506149; --line:#718269; --soft:#94a784; --accent:#4d5d47; --accent-soft:#c0cea8; --good:#3e603b; --panel:#b9c8a2; font-family:Consolas, "Lucida Console", monospace; }
+    .phone-status { height:37px; padding:13px 21px 0; display:flex; justify-content:space-between; color:var(--ink); font-size:10px; font-weight:700; }
+    .phone-status span:last-child { letter-spacing:2px; }
+    .app-head { display:flex; align-items:center; justify-content:space-between; padding:19px 22px 10px; }
+    .mini-brand { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:750; letter-spacing:-.03em; }
+    .mini-mark { display:grid; place-items:center; width:29px; height:29px; border-radius:10px; color:var(--accent); background:var(--accent-soft); font-size:14px; }
+    .more { width:30px; height:30px; display:grid; place-items:center; border:1px solid var(--line); border-radius:50%; color:var(--muted); font-size:15px; }
+    .content { padding:21px 20px 20px; }
+    .connected { display:flex; align-items:center; gap:8px; margin:0 0 22px; color:var(--good); font-size:11px; font-weight:650; }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 15%,transparent); }
+    .screen h3 { margin:0; color:var(--ink); font-size:27px; line-height:1.17; letter-spacing:-.055em; }
+    .sub { margin:8px 0 20px; color:var(--muted); font-size:12px; line-height:1.6; }
+    .drop { display:flex; min-height:167px; flex-direction:column; justify-content:center; align-items:center; border:1px dashed color-mix(in srgb,var(--accent) 42%,var(--line)); border-radius:19px; background:var(--accent-soft); text-align:center; transition:.2s ease; }
+    .drop.is-drag { transform:scale(.98); border-style:solid; }
+    .upload-icon { display:grid; place-items:center; width:42px; height:42px; margin-bottom:10px; border-radius:14px; color:var(--accent); background:var(--panel); font-size:21px; }
+    .drop strong { color:var(--ink); font-size:12px; }
+    .drop span { margin-top:5px; color:var(--muted); font-size:10px; }
+    .pick { margin-top:12px; padding:8px 13px; border:0; border-radius:9px; color:var(--accent); background:var(--panel); font-size:11px; font-weight:700; cursor:pointer; }
+    .pick:hover { filter:brightness(.97); }
+    .file-input { display:none; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; margin:22px 0 10px; }
+    .section-head strong { font-size:12px; }
+    .section-head span { color:var(--muted); font-size:10px; }
+    .file-row { display:flex; align-items:center; gap:10px; min-height:49px; border-bottom:1px solid var(--line); }
+    .file-icon { width:32px; height:32px; display:grid; place-items:center; border-radius:10px; background:var(--soft); color:var(--accent); font-size:13px; }
+    .file-info { flex:1; min-width:0; }
+    .file-info b { display:block; overflow:hidden; color:var(--ink); font-size:10px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+    .file-info span { display:block; margin-top:3px; color:var(--muted); font-size:9px; }
+    .check { color:var(--good); font-size:13px; }
+    .placeholder { padding:14px 0 8px; color:var(--muted); font-size:11px; text-align:center; }
+    .transfer { display:flex; align-items:center; justify-content:center; width:100%; min-height:47px; margin-top:16px; border:0; border-radius:13px; color:var(--accent-button-text,#fff); background:var(--accent); font-size:12px; font-weight:750; cursor:pointer; transition:.2s ease; }
+    .screen[data-theme="studio"] .transfer { --accent-button-text:#11211d; }
+    .screen[data-theme="warm"] .transfer { --accent-button-text:#fff; }
+    .transfer:disabled { opacity:.42; cursor:not-allowed; }
+    .privacy { margin:12px 5px 0; color:var(--muted); font-size:9px; line-height:1.55; text-align:center; }
+    .toast { min-height:17px; margin-top:8px; color:var(--good); font-size:10px; text-align:center; }
+    .bottom-bar { height:3px; width:91px; margin:6px auto 8px; border-radius:8px; background:var(--ink); opacity:.75; }
+    .screen[data-theme="studio"] .app-head { padding-bottom:12px; }
+    .screen[data-theme="studio"] h3 { font-size:25px; }
+    .screen[data-theme="studio"] .drop { border-style:solid; }
+    .screen[data-theme="warm"] { font-family: Georgia, "Noto Serif TC", serif; }
+    .screen[data-theme="warm"] .mini-brand,.screen[data-theme="warm"] .connected,.screen[data-theme="warm"] .section-head,.screen[data-theme="warm"] .file-info,.screen[data-theme="warm"] button { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif; }
+    .screen[data-theme="warm"] .drop { border-radius:10px; }
+    .screen[data-theme="gba"] .app-head { border-bottom:2px solid var(--ink); }
+    .screen[data-theme="gba"] .mini-mark { border-radius:4px; box-shadow:inset -3px -3px 0 #879876; }
+    .screen[data-theme="gba"] h3 { font-size:23px; letter-spacing:-.07em; }
+    .screen[data-theme="gba"] .drop { border:2px solid var(--ink); border-radius:3px; background:linear-gradient(135deg,#bac9a2,#a5b591); box-shadow:3px 3px 0 var(--ink); }
+    .screen[data-theme="gba"] .upload-icon,.screen[data-theme="gba"] .file-icon { border:2px solid var(--ink); border-radius:3px; }
+    .screen[data-theme="gba"] .pick,.screen[data-theme="gba"] .transfer { border:2px solid var(--ink); border-radius:3px; box-shadow:3px 3px 0 var(--ink); }
+    .screen[data-theme="gba"] .file-row { border-bottom:2px dotted var(--line); }
+    .caption { margin-top:17px; color:#9aa4b4; font-size:11px; text-align:center; }
+    .bottom-note { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:33px; color:#8b96a7; font-size:11px; }
+    .bottom-note b { color:#57677f; font-weight:650; }
+    @media(max-width:1060px) { .stage { grid-template-columns:minmax(0,1fr); gap:6px; } .side-note { display:none; } .device { width:min(420px,100%); margin:0 auto; } .shell { padding-top:24px; } .topline { margin-bottom:37px; } }
+    @media(max-width:450px) { .shell { width:calc(100% - 24px); } .choices { gap:6px; } .choice { gap:6px; padding:9px 10px; } .choice small { display:none; } .screen { min-height:670px; } .version { font-size:10px; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topline">
+      <div class="brand"><span class="brand-mark">↗</span><span>iPhone Bridge</span></div>
+      <span class="version">Design exploration · 01</span>
+    </header>
+    <section class="intro">
+      <div class="eyebrow">First impression matters</div>
+      <h1>先選一種使用感</h1>
+      <p>同一個接收流程，三種視覺方向。點選版本切換預覽，看看哪一種最像你想要的產品。</p>
+      <div class="choices" role="group" aria-label="選擇頁面風格">
+        <button class="choice" data-theme="clean" aria-pressed="true"><i class="swatch"></i><strong>01 清爽原生</strong><small>明亮・直覺</small></button>
+        <button class="choice" data-theme="studio" aria-pressed="false"><i class="swatch"></i><strong>02 深色工作台</strong><small>俐落・科技</small></button>
+        <button class="choice" data-theme="warm" aria-pressed="false"><i class="swatch"></i><strong>03 暖白效率</strong><small>溫和・整理</small></button>
+        <button class="choice" data-theme="gba" aria-pressed="false"><i class="swatch"></i><strong>04 GBA 像素</strong><small>復古・掌機</small></button>
+      </div>
+    </section>
+    <section class="stage" aria-label="上傳頁風格預覽">
+      <aside class="side-note"><span class="number" id="side-number">STYLE 01</span><h2 id="side-title">像 iPhone 原生介面一樣，清楚又熟悉。</h2><p id="side-desc">留白、柔和藍色和直接的操作提示。第一次使用也能很快開始傳照片。</p><div class="swatches"><i></i><i></i><i></i></div></aside>
+      <div>
+        <div class="device"><section class="screen" id="screen" data-theme="clean">
+          <div class="phone-status"><span>9:41</span><span>●●●　◖　▰</span></div>
+          <header class="app-head"><div class="mini-brand"><span class="mini-mark">↗</span><span>iPhone Bridge</span></div><span class="more" aria-label="更多選項">···</span></header>
+          <div class="content">
+            <p class="connected"><i class="dot"></i><span id="connected-text">已連線至 Fox-PC</span></p>
+            <h3>把想傳的<br>放進來。</h3>
+            <p class="sub">照片、影片或檔案，都可以一次選好再傳送。</p>
+            <div class="drop" id="drop-zone"><span class="upload-icon">↑</span><strong>選取照片或檔案</strong><span>從 iPhone 的照片或檔案中挑選</span><button type="button" class="pick" id="pick-button">瀏覽檔案</button><input id="file-input" class="file-input" type="file" multiple aria-label="選取要傳送的檔案"></div>
+            <div class="section-head"><strong>準備傳送</strong><span id="file-count">尚未選取</span></div>
+            <div id="file-list"><div class="placeholder">選取的內容會顯示在這裡</div></div>
+            <button type="button" class="transfer" id="transfer-button" disabled>選取檔案後即可傳送</button>
+            <div class="toast" id="toast" aria-live="polite"></div>
+            <p class="privacy">檔案只會傳到目前連線的電腦<br>連線結束後，接收頁面會自動關閉。</p>
+          </div>
+          <div class="bottom-bar"></div>
+        </section></div>
+        <div class="caption">iPhone 上傳頁 · 行動版畫面</div>
+      </div>
+      <aside class="side-note"><span class="number">DESIGN INTENT</span><h2 id="intent-title">一眼找到上傳，放心把檔案交給自己的電腦。</h2><p id="intent-desc">把安全感放在可見細節：清楚顯示電腦名稱、已選檔案和傳送狀態。</p><div class="bottom-note"><span>●</span><b>每個版本都保留相同的傳檔流程</b></div></aside>
+    </section>
+  </main>
+  <script>
+    const themes = {
+      clean: { number:'STYLE 01', title:'像 iPhone 原生介面一樣，清楚又熟悉。', desc:'留白、柔和藍色和直接的操作提示。第一次使用也能很快開始傳照片。', intent:'一眼找到上傳，放心把檔案交給自己的電腦。', detail:'把安全感放在可見細節：清楚顯示電腦名稱、已選檔案和傳送狀態。' },
+      studio: { number:'STYLE 02', title:'像一座安靜俐落的傳輸工作台。', desc:'深色介面搭配薄荷綠狀態色，適合常態開啟、重視效率的桌面工具。', intent:'狀態優先，傳輸進度清楚可見。', detail:'深色背景降低視覺干擾；高對比色集中用在連線狀態與主要操作。' },
+      warm: { number:'STYLE 03', title:'柔和一點，讓整理與備份更從容。', desc:'暖白紙感搭配自然綠色，讓大量照片和檔案管理看起來不那麼工具化。', intent:'像整理自己的數位收件匣。', detail:'後續可以自然延伸日期分類、檔案標籤和傳輸歷史。' },
+      gba: { number:'STYLE 04', title:'把傳檔變成掌機裡的像素小任務。', desc:'低彩度 LCD 綠、硬邊按鈕與等寬像素感，帶一點 GBA 時代的掌機懷舊。', intent:'連線成功，任務準備開始。', detail:'復古只是皮膚；檔案選取與傳送流程仍然清楚、好操作。' }
+    };
+    const input = document.getElementById('file-input');
+    const list = document.getElementById('file-list');
+    const count = document.getElementById('file-count');
+    const transfer = document.getElementById('transfer-button');
+    const toast = document.getElementById('toast');
+    document.querySelectorAll('.choice').forEach(button => button.addEventListener('click', () => {
+      const theme = button.dataset.theme;
+      document.getElementById('screen').dataset.theme = theme;
+      document.querySelectorAll('.choice').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      const copy = themes[theme];
+      document.getElementById('side-number').textContent = copy.number;
+      document.getElementById('side-title').textContent = copy.title;
+      document.getElementById('side-desc').textContent = copy.desc;
+      document.getElementById('intent-title').textContent = copy.intent;
+      document.getElementById('intent-desc').textContent = copy.detail;
+    }));
+    document.getElementById('pick-button').addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      const files = Array.from(input.files || []);
+      toast.textContent = '';
+      count.textContent = files.length ? `${files.length} 個項目` : '尚未選取';
+      list.innerHTML = files.length ? files.slice(0,3).map(file => `<div class="file-row"><span class="file-icon">${file.type.startsWith('image/') ? '▧' : '▤'}</span><span class="file-info"><b>${escapeText(file.name)}</b><span>${formatSize(file.size)}</span></span><span class="check">✓</span></div>`).join('') + (files.length > 3 ? `<div class="placeholder">以及其他 ${files.length - 3} 個項目</div>` : '') : '<div class="placeholder">選取的內容會顯示在這裡</div>';
+      transfer.disabled = files.length === 0;
+      transfer.textContent = files.length ? `準備傳送 ${files.length} 個項目　→` : '選取檔案後即可傳送';
+    });
+    transfer.addEventListener('click', () => { toast.textContent = '這是風格預覽；實際傳輸會在後續版本接上。'; });
+    const zone = document.getElementById('drop-zone');
+    zone.addEventListener('dragover', event => { event.preventDefault(); zone.classList.add('is-drag'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('is-drag'));
+    zone.addEventListener('drop', event => { event.preventDefault(); zone.classList.remove('is-drag'); input.files = event.dataTransfer.files; input.dispatchEvent(new Event('change')); });
+    function formatSize(bytes) { return bytes < 1048576 ? `${Math.max(1,Math.round(bytes/1024))} KB` : `${(bytes/1048576).toFixed(1)} MB`; }
+    function escapeText(value) { const node = document.createElement('span'); node.textContent = value; return node.innerHTML; }
+  </script>
+</body>
+</html>
+

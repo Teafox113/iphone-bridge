@@ -1,0 +1,17 @@
+.dotnet/
+.nuget/
+dist/
+dist-next/
+dist-mobile/
+dist-floofyfox/
+dist-matrix/
+dist-align/
+dist-refined/
+.installer-work/
+release/
+IPhoneBridge.Windows/bin/
+IPhoneBridge.Windows/obj/
+IPhoneBridge.Windows/.vs/
+IPhoneBridge.Windows/*.user
+packaging/IPhoneBridge.Setup/bin/
+packaging/IPhoneBridge.Setup/obj/

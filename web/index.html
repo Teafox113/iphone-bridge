@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f7f9fc">
+  <title>iPhone Bridge</title>
+  <style>
+    :root { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif; color:#1c2941; background:#f1f4f9; font-synthesis:none; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; min-height:100dvh; padding:24px 16px; padding:24px 16px calc(24px + env(safe-area-inset-bottom)); background:radial-gradient(ellipse at 18% 0%,#e6efff 0,transparent 38%),#f1f4f9; }
+    button,input { font:inherit; }
+    .app { width:min(100%,510px); margin:0 auto; }
+    .top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 2px 26px; }
+    .brand { display:flex; align-items:center; gap:9px; color:#1a2942; font-size:14px; font-weight:760; letter-spacing:-.03em; }
+    .brand-mark { display:grid; place-items:center; width:32px; height:32px; border-radius:11px; color:#fff; background:#356cf6; font-size:16px; }
+    .version-label { color:#7b8798; font-size:11px; }
+    .theme-picker { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin:0 2px 15px; }
+    .theme-option { display:flex; align-items:center; justify-content:flex-start; gap:7px; min-width:0; min-height:39px; padding:5px 8px; border:1px solid #dfe5ee; border-radius:10px; color:#596983; background:#ffffffc9; font-size:11px; font-weight:650; line-height:1.25; white-space:normal; text-align:left; cursor:pointer; }
+    .theme-option[aria-pressed="true"] { border-color:#b7c9ff; color:#2659d9; background:#edf2ff; }
+    .theme-option i { width:8px; height:8px; flex:0 0 auto; border-radius:50%; background:#4775f5; }
+    .theme-option[data-theme="studio"] i { background:#57d7bd; }
+    .theme-option[data-theme="warm"] i { background:#709365; }
+    .theme-option[data-theme="gba"] i { background:#bc8f35; }
+    .surface { --paper:#fff; --ink:#1c2941; --muted:#7e899d; --line:#e9edf3; --soft:#f5f7fb; --accent:#356cf6; --accent-soft:#edf2ff; --good:#2f9c7a; --panel:#fff; --rain-bg:#eff4fc; --rain:#7194cf; --rain-head:#1f4d9a; --rain-text:#1c2941; min-height:610px; padding:26px 23px 24px; overflow:hidden; border:1px solid #e2e7ef; border-radius:25px; background:var(--paper); box-shadow:0 22px 65px #25334d18; color:var(--ink); transition:background .2s,color .2s; }
+    .surface[data-theme="studio"] { --paper:#10151c; --ink:#f1f4f6; --muted:#9da9b7; --line:#28313b; --soft:#171f28; --accent:#59d9bf; --accent-soft:#15332f; --good:#59d9bf; --panel:#141b23; --rain-bg:#07100e; --rain:#43d3a5; --rain-head:#cdffe8; --rain-text:#eff6f2; border-color:#28313b; box-shadow:0 22px 65px #10151c33; }
+    .surface[data-theme="warm"] { --paper:#f8f6f1; --ink:#26372e; --muted:#788177; --line:#e6e4dc; --soft:#f0eee7; --accent:#547b55; --accent-soft:#e8efe4; --good:#63845b; --panel:#fffefa; --rain-bg:#f7f2e8; --rain:#7c8c60; --rain-head:#a4663b; --rain-text:#3e4834; }
+    .surface[data-theme="gba"] { --paper:#a8b995; --ink:#202c25; --muted:#506149; --line:#718269; --soft:#94a784; --accent:#4d5d47; --accent-soft:#c0cea8; --good:#3e603b; --panel:#b9c8a2; --rain-bg:#202c25; --rain:#779759; --rain-head:#cce5a6; --rain-text:#dfedc8; border:3px solid #425242; border-radius:8px; box-shadow:5px 5px 0 #425242,0 22px 65px #25334d18; font-family:Consolas,"Lucida Console",monospace; }
+    .surface[data-theme="gba"] { image-rendering:pixelated; }
+    [hidden] { display:none !important; }
+    .connection { display:flex; align-items:center; gap:8px; margin:0 0 22px; color:var(--good); font-size:11px; font-weight:680; }
+    .transfer-anim { position:relative; display:flex; align-items:center; gap:12px; min-height:76px; margin:0 0 17px; padding:8px 10px; overflow:hidden; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+    .transfer-anim canvas { position:static; width:58px; height:58px; flex:0 0 58px; border:1px solid var(--line); border-radius:8px; background:var(--rain-bg); }
+    .transfer-anim span { position:relative; z-index:1; display:block; margin:0; padding:7px 0; }
+    .transfer-anim b { display:block; color:var(--rain-text); font-size:12px; }
+    .transfer-anim small { display:block; margin-top:4px; color:var(--rain-head); font-size:10px; line-height:1.5; }
+    .surface[data-theme="gba"] .transfer-anim { border:2px solid var(--ink); border-radius:3px; box-shadow:3px 3px 0 var(--ink); }
+    .surface[data-theme="gba"] .transfer-anim canvas { border:2px solid var(--ink); border-radius:2px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:var(--good); box-shadow:0 0 0 3px var(--accent-soft); box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 16%,transparent); }
+    h1 { margin:0; color:var(--ink); font-size:29px; line-height:1.2; letter-spacing:-.06em; }
+    .intro { margin:8px 0 22px; color:var(--muted); font-size:13px; line-height:1.65; }
+    .drop { display:flex; min-height:171px; flex-direction:column; align-items:center; justify-content:center; padding:18px; border:1px dashed var(--accent); border-color:color-mix(in srgb,var(--accent) 48%,var(--line)); border-radius:18px; background:var(--accent-soft); text-align:center; transition:.15s; }
+    .drop.drag { transform:scale(.985); border-style:solid; }
+    .upload-icon { display:grid; place-items:center; width:45px; height:45px; margin-bottom:11px; border-radius:14px; color:var(--accent); background:var(--panel); font-size:22px; }
+    .drop b { color:var(--ink); font-size:13px; }
+    .drop small { margin:5px 0 11px; color:var(--muted); font-size:11px; }
+    .button { min-height:44px; padding:0 17px; border:0; border-radius:11px; color:#fff; background:var(--accent); font-size:12px; font-weight:720; cursor:pointer; }
+    .button.secondary { min-height:39px; border:1px solid var(--line); color:var(--ink); background:var(--panel); }
+    .button:disabled { opacity:.46; cursor:not-allowed; }
+    .picker-actions { display:flex; width:100%; justify-content:center; gap:8px; flex-wrap:wrap; }
+    .picker-actions .button { flex:1 1 135px; max-width:190px; }
+    .surface[data-theme="studio"] .button:not(.secondary) { color:#11211d; }
+    .surface[data-theme="gba"] .drop { border:2px solid var(--ink); border-radius:3px; background:linear-gradient(135deg,#bac9a2,#a5b591); box-shadow:3px 3px 0 var(--ink); }
+    .surface[data-theme="gba"] .upload-icon,.surface[data-theme="gba"] .file-icon { border:2px solid var(--ink); border-radius:3px; }
+    .surface[data-theme="gba"] .button { border:2px solid var(--ink); border-radius:3px; box-shadow:3px 3px 0 var(--ink); }
+    .surface[data-theme="gba"] h1 { font-size:24px; }
+    .picker { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .row-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:23px 0 9px; }
+    .row-head b { color:var(--ink); font-size:12px; }
+    .row-head span { color:var(--muted); font-size:11px; }
+    .text-action { flex:0 0 auto; padding:5px 2px; border:0; color:var(--accent); background:transparent; font-size:11px; cursor:pointer; }
+    .mobile-note { margin:9px 2px 0; color:var(--muted); font-size:10px; line-height:1.65; text-align:center; }
+    .file-list { max-height:210px; overflow:auto; }
+    .file-row { display:flex; align-items:center; gap:11px; min-height:57px; border-bottom:1px solid var(--line); }
+    .file-icon { display:grid; place-items:center; width:36px; height:36px; flex:0 0 auto; border-radius:10px; color:var(--accent); background:var(--soft); font-size:15px; }
+    .file-meta { min-width:0; flex:1; }
+    .file-meta b { display:block; overflow:hidden; color:var(--ink); font-size:11px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
+    .file-meta small { display:block; margin-top:4px; color:var(--muted); font-size:10px; }
+    .file-status { color:var(--good); font-size:11px; }
+    .empty { padding:19px 0 12px; color:var(--muted); font-size:11px; text-align:center; }
+    .progress { height:5px; margin-top:14px; overflow:hidden; border-radius:9px; background:var(--soft); }
+    .progress > i { display:block; width:0; height:100%; border-radius:inherit; background:var(--accent); transition:width .15s; }
+    .main-action { display:flex; align-items:center; justify-content:center; width:100%; margin-top:16px; }
+    .message { min-height:19px; margin:10px 0 0; color:var(--good); font-size:11px; text-align:center; }
+    .message.error { color:#c14e4e; }
+    .privacy { margin:15px 3px 0; color:var(--muted); font-size:10px; line-height:1.65; text-align:center; }
+    .login { padding:22px 0 4px; }
+    .login label { display:block; margin:0 0 8px; color:var(--ink); font-size:12px; font-weight:680; }
+    .code-row { display:flex; gap:9px; }
+    .code { min-width:0; flex:1; height:47px; padding:0 13px; border:1px solid var(--line); border-radius:11px; outline:none; color:var(--ink); background:var(--panel); font-size:18px; letter-spacing:.25em; text-align:center; }
+    .code:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+    .login-note { margin:10px 0 0; color:var(--muted); font-size:10px; line-height:1.6; }
+    .connected-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:20px; }
+    .disconnect { padding:5px 8px; border:0; color:var(--muted); background:transparent; font-size:10px; text-decoration:underline; }
+    .done { padding:13px 0; color:var(--good); font-size:12px; text-align:center; }
+    .creator { display:flex; align-items:center; justify-content:center; gap:8px; margin:14px 0 0; color:#7e899d; font-size:10px; }
+    .creator-mark { display:grid; width:22px; height:22px; place-items:center; border:1px solid #cfd7e2; border-radius:6px; color:#596983; background:#fff; font:700 8px Consolas,monospace; }
+    .surface[data-theme="studio"] ~ .creator { color:#9da9b7; }
+    .surface[data-theme="gba"] ~ .creator .creator-mark { border:2px solid #425242; border-radius:2px; background:#b9c8a2; color:#202c25; }
+    @media(max-width:420px) { body { padding:14px 11px calc(14px + env(safe-area-inset-bottom)); } .top { margin-bottom:17px; } .surface { min-height:580px; padding:22px 17px; border-radius:20px; } h1 { font-size:27px; } .theme-picker { gap:6px; } .theme-option { min-height:38px; font-size:10px; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div class="brand"><span class="brand-mark">↗</span><span>iPhone Bridge</span></div>
+      <span class="version-label">頁面風格</span>
+    </header>
+    <nav class="theme-picker" aria-label="選擇頁面風格">
+      <button class="theme-option" data-theme="clean" type="button" aria-pressed="true"><i></i>清爽原生</button>
+      <button class="theme-option" data-theme="studio" type="button" aria-pressed="false"><i></i>深色工作台</button>
+      <button class="theme-option" data-theme="warm" type="button" aria-pressed="false"><i></i>暖白效率</button>
+      <button class="theme-option" data-theme="gba" type="button" aria-pressed="false"><i></i>GBA 像素掌機</button>
+    </nav>
+    <section class="surface" id="surface" data-theme="clean">
+      <div class="connection"><i class="dot"></i><span id="connection-label">準備連線</span></div>
+      <section id="login-panel" class="login">
+        <h1>連接你的電腦。</h1>
+        <p class="intro">請輸入 Windows iPhone Bridge 顯示的 8 位連線碼。</p>
+        <form id="connect-form">
+          <label for="code">本次連線碼</label>
+          <div class="code-row"><input id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{8}" placeholder="00000000" required><button class="button" type="submit">連線</button></div>
+        </form>
+        <p class="message" id="login-message" aria-live="polite"></p>
+        <p class="login-note">連線碼只在 Windows 接收服務啟動期間有效。請確認手機與電腦連在同一個私人 Wi-Fi。</p>
+      </section>
+      <section id="transfer-panel" hidden>
+        <div class="connected-top"><span class="connection"><i class="dot"></i><span id="computer-label">已連線</span></span><button type="button" class="disconnect" id="disconnect">中斷連線</button></div>
+        <div class="transfer-anim" role="status" aria-live="polite"><canvas id="pixel-anim" width="24" height="24" aria-hidden="true"></canvas><span><b id="anim-title">等待傳送</b><small id="anim-detail">手機已連線，可以選取檔案</small></span></div>
+        <h1>把想傳的<br>放進來。</h1>
+        <p class="intro">從照片或檔案中選取項目，再傳送到這台電腦。</p>
+        <div class="drop" id="drop-zone"><span class="upload-icon">↑</span><b>選取照片、影片或檔案</b><small>可多選；單一檔案最大 2 GB</small><div class="picker-actions"><button class="button secondary" type="button" id="choose-media">選取照片／影片</button><button class="button secondary" type="button" id="browse">瀏覽檔案</button></div><input class="picker" id="media-input" type="file" accept="image/*,video/*" multiple aria-label="選取照片或影片"><input class="picker" id="file-input" type="file" multiple aria-label="瀏覽手機中的檔案"></div>
+        <p class="mobile-note">可以分次加入照片、影片和文件。傳送期間請保持此頁開啟並留在前景。</p>
+        <div class="row-head"><b>準備傳送</b><span id="file-count">尚未選取</span><button class="text-action" id="clear-selection" type="button" hidden>清除</button></div>
+        <div class="file-list" id="file-list"><div class="empty">選取的內容會顯示在這裡</div></div>
+        <div class="progress" id="progress-wrap" hidden><i id="progress-bar"></i></div>
+        <button class="button main-action" id="send" type="button" disabled>選取檔案後即可傳送</button>
+        <p class="message" id="transfer-message" aria-live="polite"></p>
+        <p class="privacy">檔案傳到目前連線的電腦並存入指定資料夾。<br>停止 Windows 接收服務即可結束本次連線。</p>
+      </section>
+    </section>
+    <footer class="creator"><span class="creator-mark" aria-hidden="true">FF</span><span>BY floofyfox</span></footer>
+  </main>
+  <script>
+    (function () {
+      var surface = document.getElementById('surface');
+      var theme = localStorage.getItem('iphone-bridge-theme') || 'clean';
+      if (!['clean', 'studio', 'warm', 'gba'].includes(theme)) theme = 'clean';
+      var themeButtons = Array.from(document.querySelectorAll('.theme-option'));
+      function applyTheme(value) {
+        theme = value;
+        surface.dataset.theme = value;
+        themeButtons.forEach(function (button) { button.setAttribute('aria-pressed', String(button.dataset.theme === value)); });
+        localStorage.setItem('iphone-bridge-theme', value);
+      }
+      applyTheme(theme);
+      themeButtons.forEach(function (button) {
+        button.addEventListener('click', function () { applyTheme(button.dataset.theme); });
+      });
+
+      var token = sessionStorage.getItem('iphone-bridge-token');
+      var loginPanel = document.getElementById('login-panel');
+      var transferPanel = document.getElementById('transfer-panel');
+      var connectionLabel = document.getElementById('connection-label');
+      var loginMessage = document.getElementById('login-message');
+      var transferMessage = document.getElementById('transfer-message');
+      var fileInput = document.getElementById('file-input');
+      var mediaInput = document.getElementById('media-input');
+      var mediaButton = document.getElementById('choose-media');
+      var browseButton = document.getElementById('browse');
+      var disconnectButton = document.getElementById('disconnect');
+      var fileList = document.getElementById('file-list');
+      var fileCount = document.getElementById('file-count');
+      var clearSelectionButton = document.getElementById('clear-selection');
+      var sendButton = document.getElementById('send');
+      var progressWrap = document.getElementById('progress-wrap');
+      var progressBar = document.getElementById('progress-bar');
+      var selectedFiles = [];
+      var locked = false;
+      var animState = 'waiting';
+      var animLoopRunning = false;
+      var pixelCanvas = document.getElementById('pixel-anim');
+      var pixelContext = pixelCanvas.getContext('2d');
+      var animTitle = document.getElementById('anim-title');
+      var animDetail = document.getElementById('anim-detail');
+      var lastRainFrame = -1;
+
+      function setTransferState(state) {
+        animState = state;
+      if (state === 'sending') { animTitle.textContent = '傳送中'; animDetail.textContent = '正在將檔案送到這台電腦'; }
+        else if (state === 'done') { animTitle.textContent = '傳送完成'; animDetail.textContent = '檔案已安全送達 Windows'; }
+        else { animTitle.textContent = '等待傳送'; animDetail.textContent = '手機已連線，可以選取檔案'; }
+        if (!transferPanel.hidden) {
+          drawPixelAnimation();
+          if (!animLoopRunning) {
+            animLoopRunning = true;
+            window.requestAnimationFrame(animateRain);
+          }
+        }
+      }
+      function drawGbaDigit(ctx, digit, x, y, pixel) {
+        var rows = digit === '0' ? ['111','101','101','101','111'] : ['010','110','010','010','111'];
+        rows.forEach(function (row, rowIndex) {
+          for (var column = 0; column < row.length; column++) {
+            if (row.charAt(column) === '1') ctx.fillRect(x + column * pixel, y + rowIndex * pixel, pixel, pixel);
+          }
+        });
+      }
+      function drawPixelAnimation() {
+        if (transferPanel.hidden) { animLoopRunning = false; return; }
+        var bounds = pixelCanvas.getBoundingClientRect();
+        if (bounds.width < 1 || bounds.height < 1) return;
+        var scale = Math.min(window.devicePixelRatio || 1, 2);
+        var width = Math.round(bounds.width);
+        var height = Math.round(bounds.height);
+        var pixelWidth = Math.round(width * scale);
+        var pixelHeight = Math.round(height * scale);
+        if (pixelCanvas.width !== pixelWidth || pixelCanvas.height !== pixelHeight) {
+          pixelCanvas.width = pixelWidth;
+          pixelCanvas.height = pixelHeight;
+        }
+        var style = getComputedStyle(surface);
+        var ctx = pixelContext;
+        ctx.setTransform(scale, 0, 0, scale, 0, 0);
+        var frame = Math.floor(Date.now() / 85);
+        if (frame !== lastRainFrame) {
+          lastRainFrame = frame;
+          var background = style.getPropertyValue('--rain-bg').trim();
+          var rain = style.getPropertyValue('--rain').trim();
+          var head = style.getPropertyValue('--rain-head').trim();
+          var themeName = surface.dataset.theme;
+          var settings = {
+            clean: { spacing:18, length:3, speed:.7, glyphs:'01', step:11, font:'10px Consolas, monospace' },
+            studio: { spacing:11, length:6, speed:1.45, glyphs:'01ACEF+-<>/', step:12, font:'12px Consolas, monospace' },
+            warm: { spacing:17, length:3, speed:.58, glyphs:'01:;_+=.', step:12, font:'10px Consolas, monospace' },
+            gba: { spacing:13, length:5, speed:.86, glyphs:'01', step:11, pixel:true, font:'10px Consolas, monospace' }
+          }[themeName] || { spacing:18, length:3, speed:.7, glyphs:'01', step:11, font:'10px Consolas, monospace' };
+          ctx.fillStyle = background;
+          ctx.fillRect(0, 0, width, height);
+          ctx.font = settings.font;
+          ctx.textBaseline = 'top';
+          var columns = Math.ceil(width / settings.spacing);
+          for (var column = 0; column < columns; column++) {
+            var length = settings.length + (settings.length > 4 ? column * 7 % 4 : column % 2);
+            var cycle = height + length * settings.step + 36;
+            var speed = settings.speed * (animState === 'sending' ? 1.6 : 1);
+            var yHead = ((frame * speed + column * 37) % cycle) - length * settings.step;
+            var x = column * settings.spacing;
+            for (var tail = 0; tail < length; tail++) {
+              var y = yHead - tail * settings.step;
+              if (y < -settings.step || y > height) continue;
+              ctx.globalAlpha = tail === 0 ? 1 : Math.max(.22, .82 - tail * .1);
+              ctx.fillStyle = tail === 0 ? head : rain;
+              var glyphIndex = Math.abs(Math.floor(frame + column * 11 + tail * 3)) % settings.glyphs.length;
+              var glyph = settings.glyphs.charAt(glyphIndex);
+              if (settings.pixel) drawGbaDigit(ctx, glyph, x, y, 2);
+              else ctx.fillText(glyph, x, y);
+              if (themeName === 'warm' && tail === 0) ctx.fillRect(x + 8, y + 3, 2, 2);
+            }
+          }
+          if (themeName === 'clean') {
+            ctx.globalAlpha = .45;
+            ctx.fillStyle = rain;
+            ctx.fillRect(0, (frame * 2) % height, width, 1);
+          }
+          ctx.globalAlpha = 1;
+        }
+      }
+      function animateRain() {
+        if (transferPanel.hidden) { animLoopRunning = false; return; }
+        drawPixelAnimation();
+        window.requestAnimationFrame(animateRain);
+      }
+
+      function request(url, options) {
+        options = options || {};
+        options.headers = options.headers || {};
+        if (token) options.headers['X-Session-Key'] = token;
+        return fetch(url, options);
+      }
+      function activate(computer) {
+        loginPanel.hidden = true;
+        transferPanel.hidden = false;
+        connectionLabel.textContent = '已連線至 ' + computer;
+        document.getElementById('computer-label').textContent = computer;
+        setTransferState('waiting');
+      }
+      function checkSavedSession() {
+        if (!token) return;
+        request('/api/status').then(function (response) {
+          if (!response.ok) throw new Error('session');
+          return response.json();
+        }).then(function (data) { if (data.theme) applyTheme(data.theme); activate(data.computer); }).catch(function () {
+          token = '';
+          sessionStorage.removeItem('iphone-bridge-token');
+          connectionLabel.textContent = '準備連線';
+        });
+      }
+      function connectWithCode(code) {
+        loginMessage.classList.remove('error');
+        loginMessage.textContent = '正在確認連線碼…';
+        fetch('/api/connect', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ code:code }) })
+          .then(function (response) { return response.json().then(function (data) { if (!response.ok) throw new Error(data.error || '連線失敗'); return data; }); })
+          .then(function (data) { token = data.token; sessionStorage.setItem('iphone-bridge-token', token); if (data.theme) applyTheme(data.theme); loginMessage.textContent = ''; activate(data.computer); })
+          .catch(function (error) { loginMessage.classList.add('error'); loginMessage.textContent = error.message; });
+      }
+      document.getElementById('connect-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        var code = document.getElementById('code').value.trim();
+        connectWithCode(code);
+      });
+      disconnectButton.addEventListener('click', function () {
+        token = '';
+        sessionStorage.removeItem('iphone-bridge-token');
+        transferPanel.hidden = true;
+        loginPanel.hidden = false;
+        selectedFiles = [];
+        fileInput.value = '';
+        mediaInput.value = '';
+        renderFiles();
+        connectionLabel.textContent = '準備連線';
+      });
+      mediaButton.addEventListener('click', function () { mediaInput.click(); });
+      browseButton.addEventListener('click', function () { fileInput.click(); });
+      mediaInput.addEventListener('change', function () { addFiles(Array.from(mediaInput.files || [])); mediaInput.value = ''; });
+      fileInput.addEventListener('change', function () { addFiles(Array.from(fileInput.files || [])); fileInput.value = ''; });
+      clearSelectionButton.addEventListener('click', function () {
+        if (locked) return;
+        selectedFiles = [];
+        fileInput.value = '';
+        mediaInput.value = '';
+        renderFiles();
+        transferMessage.textContent = '';
+        transferMessage.classList.remove('error');
+        setTransferState('waiting');
+      });
+
+      function addFiles(files) {
+        if (!files.length) return;
+        setFiles(selectedFiles.concat(files));
+      }
+
+      function setFiles(files) {
+        selectedFiles = files;
+        if (!locked) setTransferState('waiting');
+        transferMessage.textContent = '';
+        transferMessage.classList.remove('error');
+        renderFiles();
+      }
+      function renderFiles() {
+        var totalBytes = selectedFiles.reduce(function (total, file) { return total + file.size; }, 0);
+        fileCount.textContent = selectedFiles.length ? selectedFiles.length + ' 個項目 · ' + formatSize(totalBytes) : '尚未選取';
+        clearSelectionButton.hidden = !selectedFiles.length;
+        if (!selectedFiles.length) {
+          fileList.innerHTML = '<div class="empty">選取的內容會顯示在這裡</div>';
+          sendButton.disabled = true;
+          sendButton.textContent = '選取檔案後即可傳送';
+          return;
+        }
+        fileList.innerHTML = '';
+        selectedFiles.slice(0, 5).forEach(function (file) {
+          var row = document.createElement('div');
+          row.className = 'file-row';
+          var icon = document.createElement('span');
+          icon.className = 'file-icon';
+          icon.textContent = file.type && file.type.indexOf('image/') === 0 ? '▧' : '▤';
+          var meta = document.createElement('span');
+          meta.className = 'file-meta';
+          var name = document.createElement('b');
+          name.textContent = file.name;
+          var size = document.createElement('small');
+          size.textContent = formatSize(file.size);
+          meta.append(name, size);
+          var status = document.createElement('span');
+          status.className = 'file-status';
+          status.textContent = '待傳送';
+          row.append(icon, meta, status);
+          fileList.appendChild(row);
+        });
+        if (selectedFiles.length > 5) {
+          var more = document.createElement('div');
+          more.className = 'empty';
+          more.textContent = '以及其他 ' + (selectedFiles.length - 5) + ' 個項目';
+          fileList.appendChild(more);
+        }
+        sendButton.disabled = false;
+        sendButton.textContent = '傳送 ' + selectedFiles.length + ' 個項目　→';
+      }
+      sendButton.addEventListener('click', function () { uploadSelected(); });
+
+      function uploadSelected() {
+        if (locked || !selectedFiles.length) return;
+        locked = true;
+        setTransferState('sending');
+        sendButton.disabled = true;
+        mediaButton.disabled = true;
+        browseButton.disabled = true;
+        clearSelectionButton.disabled = true;
+        disconnectButton.disabled = true;
+        transferMessage.classList.remove('error');
+        progressWrap.hidden = false;
+        progressBar.style.width = '0%';
+        var files = selectedFiles.slice();
+        var index = 0;
+        var completed = 0;
+        function next() {
+          if (index >= files.length) {
+            transferMessage.textContent = '已成功接收 ' + completed + ' 個檔案。';
+            setTransferState('done');
+            selectedFiles = [];
+            fileInput.value = '';
+            mediaInput.value = '';
+            renderFiles();
+            finish();
+            return;
+          }
+          var file = files[index++];
+          if (file.size > 2 * 1024 * 1024 * 1024) {
+            fail(file.name + ' 超過單檔 2 GB 限制。');
+            return;
+          }
+          transferMessage.textContent = '正在傳送 ' + index + ' / ' + files.length + '：' + file.name;
+          var data = new FormData();
+          data.append('file', file, file.name);
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/upload');
+          xhr.setRequestHeader('X-Session-Key', token);
+          xhr.upload.onprogress = function (event) {
+            if (!event.lengthComputable) return;
+            var percent = ((completed + event.loaded / event.total) / files.length) * 100;
+            progressBar.style.width = percent + '%';
+          };
+          xhr.onload = function () {
+            if (xhr.status < 200 || xhr.status >= 300) {
+              var message = '上傳失敗：' + file.name;
+              try { message = JSON.parse(xhr.responseText).error || message; } catch (_) { }
+              if (xhr.status === 413) message = file.name + ' 超過單檔 2 GB 限制。';
+              fail(message);
+              if (xhr.status === 401) {
+                token = '';
+                sessionStorage.removeItem('iphone-bridge-token');
+                transferPanel.hidden = true;
+                loginPanel.hidden = false;
+                connectionLabel.textContent = '連線需要更新';
+                loginMessage.classList.add('error');
+                loginMessage.textContent = '連線已逾期，請重新掃描 QR Code 或輸入連線碼；未完成的檔案會留在此頁。';
+              }
+              return;
+            }
+            completed++;
+            progressBar.style.width = (completed / files.length * 100) + '%';
+            next();
+          };
+          xhr.onerror = function () { fail('網路中斷，無法傳送 ' + file.name + '。'); };
+          xhr.onabort = function () { fail('傳輸已取消。'); };
+          xhr.send(data);
+        }
+        function fail(message) {
+          selectedFiles = files.slice(Math.max(0, index - 1));
+          renderFiles();
+          setTransferState('waiting');
+          transferMessage.classList.add('error');
+          transferMessage.textContent = message + (completed ? ' 已完成的檔案仍保留在電腦上；可重新傳送剩餘項目。' : ' 可確認連線後重試。');
+          finish();
+        }
+        function finish() {
+          locked = false;
+          sendButton.disabled = selectedFiles.length === 0;
+          mediaButton.disabled = false;
+          browseButton.disabled = false;
+          clearSelectionButton.disabled = !selectedFiles.length;
+          disconnectButton.disabled = false;
+          if (selectedFiles.length) sendButton.textContent = '重新傳送剩餘 ' + selectedFiles.length + ' 個項目　→';
+          setTimeout(function () { progressWrap.hidden = true; progressBar.style.width = '0'; }, 1100);
+        }
+        next();
+      }
+
+      function formatSize(bytes) {
+        if (bytes < 1024 * 1024) return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+        if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+        return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+      }
+      var zone = document.getElementById('drop-zone');
+      zone.addEventListener('dragover', function (event) { event.preventDefault(); zone.classList.add('drag'); });
+      zone.addEventListener('dragleave', function () { zone.classList.remove('drag'); });
+      zone.addEventListener('drop', function (event) { event.preventDefault(); zone.classList.remove('drag'); setFiles(Array.from(event.dataTransfer.files || [])); });
+      var scannedCode = new URLSearchParams(location.search).get('code');
+      if (scannedCode && /^[0-9]{8}$/.test(scannedCode)) {
+        history.replaceState(null, '', location.pathname);
+        document.getElementById('code').value = scannedCode;
+        connectWithCode(scannedCode);
+      } else {
+        checkSavedSession();
+      }
+    })();
+  </script>
+</body>
+</html>
