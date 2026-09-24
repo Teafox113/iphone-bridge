@@ -4,6 +4,16 @@
 
 > 本專案仍在開發中。Android Chrome 的選取與上傳流程已加入，尚未完成實體 Android 裝置驗證。如有問題請於issue通知。
 
+## 使用介面截圖
+
+以下為手機端連線後、等待傳送時的介面示意；Windows 與手機網頁可切換相同的四種皮膚。
+
+| 01 清爽原生 | 02 深色工作台 |
+| --- | --- |
+| <img src="docs/screenshots/mobile-clean.png" alt="清爽原生皮膚的手機傳輸頁面" width="320"> | <img src="docs/screenshots/mobile-studio.png" alt="深色工作台皮膚的手機傳輸頁面" width="320"> |
+| 03 暖白效率 | 04 GBA 像素掌機 |
+| <img src="docs/screenshots/mobile-warm.png" alt="暖白效率皮膚的手機傳輸頁面" width="320"> | <img src="docs/screenshots/mobile-gba.png" alt="GBA 像素皮膚的手機傳輸頁面" width="320"> |
+
 ## 功能
 
 - Windows 桌面接收程式，可選擇檔案儲存資料夾並查看最近收到的檔案。
