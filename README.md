@@ -4,6 +4,16 @@
 
 > 本專案仍在開發中。Android Chrome 的選取與上傳流程已加入，尚未完成實體 Android 裝置驗證。如有問題請於issue通知。
 
+## 下載與安裝
+
+**一般使用者不需要建置專案，也不需要另外安裝 .NET。**
+
+1. 前往 [下載最新版 Windows x64 安裝檔](https://github.com/Teafox113/iphone-bridge/releases/latest/download/IPhoneBridge-Setup-x64.exe)。
+2. 下載後執行 `IPhoneBridge-Setup-x64.exe`，依照安裝程式完成安裝。
+3. 從 Windows「開始」功能表開啟 **iPhone Bridge**。
+
+安裝程式會安裝到目前 Windows 帳號，並建立開始功能表捷徑與解除安裝項目。程式目前提供 Windows x64 版本。
+
 ## 使用介面
 
 ### Windows 桌面
@@ -32,7 +42,7 @@
 
 ## 使用方式
 
-1. 在 Windows 開啟 `IPhoneBridge.Windows.exe`，選擇接收資料夾並按「啟動接收」。
+1. 從 Windows「開始」功能表開啟 **iPhone Bridge**，選擇接收資料夾並按「啟動接收」。
 2. 確認 Windows 電腦和手機連在同一個可互相通訊的私人 Wi-Fi。
 3. 用手機相機掃描 Windows 顯示的 QR Code。也可以在手機瀏覽器開啟本機網址，再輸入 8 位連線碼。
 4. 連線後，選取照片／影片或瀏覽手機中的檔案，再按傳送。
@@ -48,15 +58,11 @@
 - 第一次啟動時，Windows 防火牆可能詢問是否允許存取；請只對信任的私人網路開放。
 - 單一檔案上限為 2 GB。失敗檔案重試時會從頭重新傳送，目前尚未支援單一檔案的分塊續傳。
 
-## 建置與執行
-
-### 需求
-
-- Windows 電腦
-- 建置：.NET 10 SDK
-- 安裝檔為 Windows x64 自含版本，使用者不需要另外安裝 .NET Runtime。
+## 開發者資訊
 
 ### 從原始碼建置
+
+需要 Windows 電腦與 .NET 10 SDK。一般使用者請依照上方「下載與安裝」取得安裝程式。
 
 在專案根目錄開啟 PowerShell，建置單一下載安裝檔：
 
