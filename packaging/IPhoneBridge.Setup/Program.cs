@@ -18,7 +18,7 @@ internal static class Program
 
 internal sealed class SetupForm : Form
 {
-    private const string InstallerVersion = "0.1.0";
+    private const string InstallerVersion = "0.1.1";
     private const string AppResourceName = "IPhoneBridge.Setup.Payload.IPhoneBridge.Windows.exe";
     private const string NoticesResourceName = "IPhoneBridge.Setup.Payload.third-party-notices.txt";
     private const string UninstallerResourceName = "IPhoneBridge.Setup.Payload.uninstall.ps1";
@@ -32,6 +32,7 @@ internal sealed class SetupForm : Form
     public SetupForm()
     {
         Text = "iPhone Bridge 安裝程式";
+        Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath)!;
         StartPosition = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -79,7 +80,9 @@ internal sealed class SetupForm : Form
             BackColor = Color.White,
             BorderStyle = BorderStyle.FixedSingle,
         };
-        _installButton.Text = "安裝 iPhone Bridge";
+        _installButton.Text = File.Exists(Path.Combine(_installDirectory, "IPhoneBridge.Windows.exe"))
+            ? "更新／重新安裝"
+            : "安裝 iPhone Bridge";
         _installButton.Location = new Point(31, 211);
         _installButton.Size = new Size(180, 42);
         _installButton.FlatStyle = FlatStyle.Flat;

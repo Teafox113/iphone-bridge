@@ -43,6 +43,7 @@ public sealed class Form1 : Form
     public Form1()
     {
         Text = "iPhone Bridge";
+        Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath)!;
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(520, 780);
         Size = new Size(580, 960);

@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>..\..\IPhoneBridge.Windows\Assets\phone-bridge.ico</ApplicationIcon>
     <RestoreConfigFile>$(MSBuildProjectDirectory)\..\..\NuGet.Config</RestoreConfigFile>
   </PropertyGroup>
 
