@@ -21,8 +21,7 @@ public sealed class Form1 : Form
     private readonly Label _transferHeading = new();
     private readonly Label _transferDetail = new();
     private readonly Label _networkHint = new();
-    private readonly Button _startButton = new();
-    private readonly Button _stopButton = new();
+    private readonly ReceiverToggleSwitch _receiverToggle = new();
     private readonly Button _chooseFolderButton = new();
     private readonly Button _copyAddressButton = new();
     private readonly ListBox _activityList = new();
@@ -31,6 +30,7 @@ public sealed class Form1 : Form
     private readonly Panel _futureGameSlot = new();
     private string _pairingCode = string.Empty;
     private string _selectedTheme = "clean";
+    private bool _syncingReceiverToggle;
 
     private static readonly IReadOnlyDictionary<string, ThemePalette> Palettes = new Dictionary<string, ThemePalette>
     {
@@ -276,18 +276,30 @@ public sealed class Form1 : Form
             Padding = Padding.Empty,
             Tag = "card",
         };
-        _startButton.Text = "啟動接收";
-        _startButton.Size = new Size(138, 40);
-        _startButton.Margin = new Padding(4, 3, 8, 2);
-        _startButton.Click += async (_, _) => await StartServerAsync();
-        _startButton.Tag = "primary";
-        _stopButton.Text = "停止接收";
-        _stopButton.Size = new Size(120, 40);
-        _stopButton.Margin = new Padding(4, 3, 4, 2);
-        _stopButton.Click += async (_, _) => await StopServerAsync();
-        _stopButton.Tag = "secondary";
-        actions.Controls.Add(_startButton);
-        actions.Controls.Add(_stopButton);
+        _receiverToggle.Size = new Size(176, 48);
+        _receiverToggle.Margin = new Padding(4, 1, 4, 1);
+        _receiverToggle.AccessibleName = "接收服務開關";
+        _receiverToggle.AccessibleDescription = "目前尚未啟動，按一下即可啟動接收";
+        _receiverToggle.CheckedChanged += async (_, _) =>
+        {
+            if (_syncingReceiverToggle) return;
+            _receiverToggle.Enabled = false;
+            try
+            {
+                if (_receiverToggle.Checked) await StartServerAsync();
+                else await StopServerAsync();
+            }
+            catch (Exception ex)
+            {
+                SetRunning(_server.IsRunning);
+                MessageBox.Show(this, "切換接收狀態失敗：" + ex.Message, "iPhone Bridge", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _receiverToggle.Enabled = true;
+            }
+        };
+        actions.Controls.Add(_receiverToggle);
         layout.Controls.Add(actions, 0, 4);
 
         var addressRow = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Tag = "card", Padding = Padding.Empty };
@@ -431,6 +443,7 @@ public sealed class Form1 : Form
         if (!Palettes.ContainsKey(theme)) theme = "clean";
         _selectedTheme = theme;
         var palette = _currentPalette;
+        _receiverToggle.Palette = palette;
         ApplyThemeToControl(_root, palette);
         _transferView.SetTheme(theme);
         foreach (var pair in _themeButtons)
@@ -539,8 +552,13 @@ public sealed class Form1 : Form
 
     private void SetRunning(bool running)
     {
-        _startButton.Enabled = !running;
-        _stopButton.Enabled = running;
+        _syncingReceiverToggle = true;
+        _receiverToggle.Checked = running;
+        _receiverToggle.AccessibleDescription = running
+            ? "目前正在接收，按一下即可停止接收"
+            : "目前尚未啟動，按一下即可啟動接收";
+        _receiverToggle.Invalidate();
+        _syncingReceiverToggle = false;
         _chooseFolderButton.Enabled = !running;
         _folderBox.Enabled = !running;
         _copyAddressButton.Enabled = running;
@@ -638,4 +656,87 @@ public sealed class Form1 : Form
     }
 
     private sealed record ThemePalette(Color Background, Color Surface, Color Text, Color Muted, Color Border, Color Field, Color Accent);
+
+    private sealed class ReceiverToggleSwitch : CheckBox
+    {
+        [System.ComponentModel.Browsable(false)]
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public ThemePalette? Palette { get; set; }
+
+        public ReceiverToggleSwitch()
+        {
+            Appearance = Appearance.Button;
+            AutoCheck = true;
+            AutoSize = false;
+            BackColor = Color.Transparent;
+            Cursor = Cursors.Hand;
+            FlatStyle = FlatStyle.Flat;
+            FlatAppearance.BorderSize = 0;
+            FlatAppearance.MouseDownBackColor = Color.Transparent;
+            FlatAppearance.MouseOverBackColor = Color.Transparent;
+            Text = string.Empty;
+            TabStop = true;
+            UseVisualStyleBackColor = false;
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.SupportsTransparentBackColor, true);
+        }
+
+        protected override void OnCheckedChanged(EventArgs e)
+        {
+            base.OnCheckedChanged(e);
+            Invalidate();
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            if (Palette is not { } palette || Height < 8) return;
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            var trackHeight = Math.Min(34, Height - 6);
+            var trackWidth = (int)Math.Round(trackHeight * 1.94);
+            var inset = Math.Max(3, trackHeight / 8);
+            var track = new Rectangle(3, (Height - trackHeight) / 2, trackWidth, trackHeight);
+            var trackColor = Checked ? palette.Accent : palette.Border;
+            if (!Enabled) trackColor = Blend(trackColor, palette.Background, 0.48f);
+
+            using (var trackPath = RoundedPath(track, trackHeight / 2))
+            using (var trackBrush = new SolidBrush(trackColor))
+                e.Graphics.FillPath(trackBrush, trackPath);
+
+            var knobSize = trackHeight - inset * 2;
+            var knobX = Checked ? track.Right - knobSize - inset : track.Left + inset;
+            var knob = new Rectangle(knobX, track.Top + inset, knobSize, knobSize);
+            var knobColor = Enabled ? palette.Surface : Blend(palette.Surface, palette.Background, 0.42f);
+            using (var knobBrush = new SolidBrush(knobColor))
+                e.Graphics.FillEllipse(knobBrush, knob);
+
+            var textBounds = new Rectangle(track.Right + 10, 0, Math.Max(0, Width - track.Right - 10), Height);
+            var textColor = Enabled ? palette.Text : palette.Muted;
+            TextRenderer.DrawText(e.Graphics, Checked ? "停止接收" : "啟動接收", Font, textBounds, textColor,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
+
+            if (Focused && ShowFocusCues)
+                ControlPaint.DrawFocusRectangle(e.Graphics, Rectangle.Inflate(ClientRectangle, -1, -2), textColor, palette.Background);
+        }
+
+        private static GraphicsPath RoundedPath(Rectangle rectangle, int radius)
+        {
+            var path = new GraphicsPath();
+            var diameter = radius * 2;
+            path.AddArc(rectangle.Left, rectangle.Top, diameter, diameter, 180, 90);
+            path.AddArc(rectangle.Right - diameter, rectangle.Top, diameter, diameter, 270, 90);
+            path.AddArc(rectangle.Right - diameter, rectangle.Bottom - diameter, diameter, diameter, 0, 90);
+            path.AddArc(rectangle.Left, rectangle.Bottom - diameter, diameter, diameter, 90, 90);
+            path.CloseFigure();
+            return path;
+        }
+
+        private static Color Blend(Color foreground, Color background, float amount)
+        {
+            return Color.FromArgb(
+                (int)(foreground.R + (background.R - foreground.R) * amount),
+                (int)(foreground.G + (background.G - foreground.G) * amount),
+                (int)(foreground.B + (background.B - foreground.B) * amount));
+        }
+    }
 }
