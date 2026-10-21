@@ -1,8 +1,10 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text.Json;
 using QRCoder;
 
 namespace IPhoneBridge.Windows;
@@ -23,6 +25,7 @@ public sealed class Form1 : Form
     private readonly Label _networkHint = new();
     private readonly ReceiverToggleSwitch _receiverToggle = new();
     private readonly Button _chooseFolderButton = new();
+    private readonly Button _openFolderButton = new();
     private readonly Button _copyAddressButton = new();
     private readonly ListBox _activityList = new();
     private readonly Dictionary<string, Button> _themeButtons = new();
@@ -40,8 +43,14 @@ public sealed class Form1 : Form
         ["gba"] = new(Color.FromArgb(168, 185, 149), Color.FromArgb(185, 200, 162), Color.FromArgb(32, 44, 37), Color.FromArgb(80, 97, 73), Color.FromArgb(113, 130, 105), Color.FromArgb(174, 192, 154), Color.FromArgb(77, 93, 71)),
     };
 
+    private static readonly string SettingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "floofyfox", "Phone Bridge", "settings.json");
+
     public Form1()
     {
+        var savedSettings = LoadSettings();
+        _selectedTheme = Palettes.ContainsKey(savedSettings.Theme ?? string.Empty) ? savedSettings.Theme! : "clean";
         Text = "iPhone Bridge";
         Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath)!;
         StartPosition = FormStartPosition.CenterScreen;
@@ -56,7 +65,10 @@ public sealed class Form1 : Form
         {
             if (!IsDisposed && IsHandleCreated) BeginInvoke(() => SetTransferCaption(_server.IsRunning, count > 0));
         };
-        _folderBox.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "iPhone Bridge");
+        _folderBox.Text = string.IsNullOrWhiteSpace(savedSettings.ReceiveFolder)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "iPhone Bridge")
+            : savedSettings.ReceiveFolder;
+        UpdateOpenFolderButton();
         SetRunning(false);
         ApplyTheme(_selectedTheme);
     }
@@ -179,14 +191,18 @@ public sealed class Form1 : Form
         };
         _themeToolTip.SetToolTip(button, themeName);
         button.SizeChanged += (_, _) => SetRoundedRegion(button, _selectedTheme == "gba" ? 0 : 6);
-        button.Click += (_, _) => ApplyTheme(key);
+        button.Click += (_, _) =>
+        {
+            ApplyTheme(key);
+            SaveSettings();
+        };
         _themeButtons.Add(key, button);
         picker.Controls.Add(button);
     }
 
     private Control BuildFolderSection()
     {
-        var card = MakeCard("01　儲存位置", string.Empty, 132, out var body);
+        var card = MakeCard("01　儲存位置", "收到的照片、影片與檔案會存到此資料夾；下次開啟會沿用。", 150, out var body);
         var row = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Padding = Padding.Empty, Tag = "card" };
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         row.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
@@ -202,8 +218,24 @@ public sealed class Form1 : Form
         _chooseFolderButton.Margin = Padding.Empty;
         _chooseFolderButton.Click += (_, _) => ChooseFolder();
         _chooseFolderButton.Tag = "secondary";
+        var folderActions = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            Padding = Padding.Empty,
+            Margin = Padding.Empty,
+            Tag = "card",
+        };
+        _openFolderButton.Text = "開啟資料夾";
+        _openFolderButton.Size = new Size(116, 32);
+        _openFolderButton.Margin = new Padding(8, 0, 0, 0);
+        _openFolderButton.Click += (_, _) => OpenReceiveFolder();
+        _openFolderButton.Tag = "secondary";
+        folderActions.Controls.Add(_chooseFolderButton);
+        folderActions.Controls.Add(_openFolderButton);
         row.Controls.Add(_folderBox, 0, 0);
-        row.Controls.Add(_chooseFolderButton, 0, 1);
+        row.Controls.Add(folderActions, 0, 1);
         body.Controls.Add(row);
         return card;
     }
@@ -512,7 +544,67 @@ public sealed class Form1 : Form
     {
         using var dialog = new FolderBrowserDialog { Description = "選擇接收 iPhone 檔案的位置", UseDescriptionForTitle = true };
         if (Directory.Exists(_folderBox.Text)) dialog.SelectedPath = _folderBox.Text;
-        if (dialog.ShowDialog(this) == DialogResult.OK) _folderBox.Text = dialog.SelectedPath;
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+        {
+            _folderBox.Text = dialog.SelectedPath;
+            UpdateOpenFolderButton();
+            SaveSettings();
+        }
+    }
+
+    private void OpenReceiveFolder()
+    {
+        try
+        {
+            if (!Directory.Exists(_folderBox.Text))
+            {
+                MessageBox.Show(this, "收件資料夾目前不存在，請先選擇或啟動接收。", "iPhone Bridge", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var explorer = new ProcessStartInfo("explorer.exe") { UseShellExecute = true };
+            explorer.ArgumentList.Add(_folderBox.Text);
+            Process.Start(explorer);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "無法開啟收件資料夾：" + ex.Message, "iPhone Bridge", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void UpdateOpenFolderButton()
+    {
+        _openFolderButton.Enabled = Directory.Exists(_folderBox.Text);
+    }
+
+    private static UserSettings LoadSettings()
+    {
+        try
+        {
+            if (!File.Exists(SettingsPath)) return new UserSettings(null, null);
+            return JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(SettingsPath)) ?? new UserSettings(null, null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return new UserSettings(null, null);
+        }
+    }
+
+    private void SaveSettings()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+            var settings = new UserSettings(_folderBox.Text, _selectedTheme);
+            var temporaryPath = SettingsPath + ".tmp";
+            File.WriteAllText(temporaryPath, JsonSerializer.Serialize(settings));
+            File.Move(temporaryPath, SettingsPath, overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(this, "無法儲存偏好設定。資料夾與介面選擇仍可使用，但下次開啟時可能需要重新設定。\r\n\r\n" + ex.Message,
+                "iPhone Bridge", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private async Task StartServerAsync()
@@ -520,6 +612,7 @@ public sealed class Form1 : Form
         try
         {
             Directory.CreateDirectory(_folderBox.Text);
+            UpdateOpenFolderButton();
             var addresses = GetPrivateIpv4Addresses();
             if (addresses.Count == 0)
             {
@@ -561,6 +654,7 @@ public sealed class Form1 : Form
         _syncingReceiverToggle = false;
         _chooseFolderButton.Enabled = !running;
         _folderBox.Enabled = !running;
+        UpdateOpenFolderButton();
         _copyAddressButton.Enabled = running;
         _statusLabel.Text = running ? "接收中" : "尚未啟動";
         _statusLabel.BackColor = running ? Color.FromArgb(225, 245, 237) : _currentPalette.Field;
@@ -650,10 +744,13 @@ public sealed class Form1 : Form
 
     protected override async void OnFormClosing(FormClosingEventArgs e)
     {
+        SaveSettings();
         await _server.StopAsync();
         ClearQrCode();
         base.OnFormClosing(e);
     }
+
+    private sealed record UserSettings(string? ReceiveFolder, string? Theme);
 
     private sealed record ThemePalette(Color Background, Color Surface, Color Text, Color Muted, Color Border, Color Field, Color Accent);
 
