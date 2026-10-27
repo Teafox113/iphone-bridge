@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace IPhoneBridge.Windows;
 
-public sealed record ReceivedFile(string Name, string? SizeDescription, DateTime Time, string? Details = null);
+public sealed record ReceivedFile(string Name, string? SizeDescription, DateTime Time, string? Details = null, string? FilePath = null);
 
 public sealed class LocalTransferServer
 {
@@ -183,7 +183,7 @@ public sealed class LocalTransferServer
 
         var savedName = Path.GetFileName(targetPath);
         var size = FormatSize(file.Length);
-        FileReceived?.Invoke(new ReceivedFile(savedName, size, DateTime.Now));
+        FileReceived?.Invoke(new ReceivedFile(savedName, size, DateTime.Now, FilePath: targetPath));
         return Results.Ok(new { name = savedName, size = file.Length });
     }
 

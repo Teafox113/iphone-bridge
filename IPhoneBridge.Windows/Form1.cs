@@ -28,6 +28,7 @@ public sealed class Form1 : Form
     private readonly Button _openFolderButton = new();
     private readonly Button _copyAddressButton = new();
     private readonly ListBox _activityList = new();
+    private readonly List<string?> _activityFilePaths = new();
     private readonly Dictionary<string, Button> _themeButtons = new();
     private readonly ToolTip _themeToolTip = new();
     private readonly Panel _futureGameSlot = new();
@@ -363,11 +364,14 @@ public sealed class Form1 : Form
 
     private Control BuildActivitySection()
     {
-        var card = MakeCard("最近收到", "新檔案會立即出現在儲存資料夾。", 156, out var body);
+        var card = MakeCard("最近收到", "雙擊檔案即可開啟；也可用上方按鈕瀏覽收件資料夾。", 156, out var body);
         _activityList.Dock = DockStyle.Fill;
         _activityList.BorderStyle = BorderStyle.None;
         _activityList.IntegralHeight = false;
+        _activityList.AccessibleName = "最近收到的檔案與接收狀態";
+        _activityList.AccessibleDescription = "雙擊收到的檔案即可使用預設程式開啟。";
         _activityList.Tag = "field activity";
+        _activityList.DoubleClick += (_, _) => OpenSelectedReceivedFile();
         body.Controls.Add(_activityList);
         return card;
     }
@@ -714,7 +718,32 @@ public sealed class Form1 : Form
             ? $"{file.Time:HH:mm:ss}  ·  {file.Name}  {file.Details}"
             : $"{file.Time:HH:mm:ss}  ·  {file.Name}  ({file.SizeDescription})";
         _activityList.Items.Insert(0, line);
-        while (_activityList.Items.Count > 100) _activityList.Items.RemoveAt(_activityList.Items.Count - 1);
+        _activityFilePaths.Insert(0, file.FilePath);
+        while (_activityList.Items.Count > 100)
+        {
+            _activityList.Items.RemoveAt(_activityList.Items.Count - 1);
+            _activityFilePaths.RemoveAt(_activityFilePaths.Count - 1);
+        }
+    }
+
+    private void OpenSelectedReceivedFile()
+    {
+        var index = _activityList.SelectedIndex;
+        if (index < 0 || index >= _activityFilePaths.Count || _activityFilePaths[index] is not { } filePath) return;
+        if (!File.Exists(filePath))
+        {
+            MessageBox.Show(this, "這個檔案已不在原本的位置。請重新接收或到收件資料夾確認。", "找不到檔案", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(filePath) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "無法開啟檔案：" + ex.Message, "iPhone Bridge", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private static List<IPAddress> GetPrivateIpv4Addresses()

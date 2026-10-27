@@ -18,9 +18,10 @@ internal static class Program
 
 internal sealed class SetupForm : Form
 {
-    private const string InstallerVersion = "0.1.3";
+    private const string InstallerVersion = "0.1.4";
     private const string AppResourceName = "IPhoneBridge.Setup.Payload.IPhoneBridge.Windows.exe";
     private const string NoticesResourceName = "IPhoneBridge.Setup.Payload.third-party-notices.txt";
+    private const string IconResourceName = "IPhoneBridge.Setup.Payload.phone-bridge.ico";
     private const string UninstallerResourceName = "IPhoneBridge.Setup.Payload.uninstall.ps1";
     private readonly Button _installButton = new();
     private readonly ProgressBar _progress = new();
@@ -121,6 +122,7 @@ internal sealed class SetupForm : Form
         _installButton.Enabled = false;
         _progress.Visible = true;
         var applicationPath = Path.Combine(_installDirectory, "IPhoneBridge.Windows.exe");
+        var iconPath = Path.Combine(_installDirectory, $"phone-bridge-{InstallerVersion}.ico");
         var temporaryApplicationPath = applicationPath + ".new";
         try
         {
@@ -144,8 +146,15 @@ internal sealed class SetupForm : Form
                 await source.CopyToAsync(destination);
             }
 
-            CreateStartMenuShortcut(applicationPath);
-            RegisterUninstaller(applicationPath);
+            await using (var source = OpenPayload(IconResourceName))
+            await using (var destination = new FileStream(iconPath, FileMode.Create, FileAccess.Write, FileShare.Read, 81920, useAsync: true))
+            {
+                await source.CopyToAsync(destination);
+            }
+
+            CreateStartMenuShortcut(applicationPath, iconPath);
+            RegisterUninstaller(applicationPath, iconPath);
+            RemoveSupersededIcons(iconPath);
             _progress.Visible = false;
 
             var launch = MessageBox.Show(this, "安裝完成。現在要啟動 iPhone Bridge 嗎？", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Information);
@@ -168,12 +177,14 @@ internal sealed class SetupForm : Form
             ?? throw new InvalidOperationException("安裝檔缺少必要元件：" + name);
     }
 
-    private void CreateStartMenuShortcut(string applicationPath)
+    private void CreateStartMenuShortcut(string applicationPath, string iconPath)
     {
         var programsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
         var shortcutDirectory = Path.Combine(programsDirectory, "iPhone Bridge");
         Directory.CreateDirectory(shortcutDirectory);
         var shortcutPath = Path.Combine(shortcutDirectory, "iPhone Bridge.lnk");
+        var temporaryShortcutPath = Path.Combine(shortcutDirectory, "iPhone Bridge.update.lnk");
+        if (File.Exists(temporaryShortcutPath)) File.Delete(temporaryShortcutPath);
 
         var shellType = Type.GetTypeFromProgID("WScript.Shell")
             ?? throw new InvalidOperationException("無法建立開始功能表捷徑。");
@@ -182,14 +193,15 @@ internal sealed class SetupForm : Form
         try
         {
             dynamic shell = shellObject;
-            dynamic shortcut = shell.CreateShortcut(shortcutPath);
+            dynamic shortcut = shell.CreateShortcut(temporaryShortcutPath);
             try
             {
                 shortcut.TargetPath = applicationPath;
                 shortcut.WorkingDirectory = _installDirectory;
                 shortcut.Description = "將 iPhone 或 Android 檔案接收到 Windows 電腦";
-                shortcut.IconLocation = applicationPath + ",0";
+                shortcut.IconLocation = iconPath;
                 shortcut.Save();
+                File.Move(temporaryShortcutPath, shortcutPath, overwrite: true);
             }
             finally
             {
@@ -202,7 +214,16 @@ internal sealed class SetupForm : Form
         }
     }
 
-    private void RegisterUninstaller(string applicationPath)
+    private static void RemoveSupersededIcons(string currentIconPath)
+    {
+        foreach (var iconPath in Directory.EnumerateFiles(Path.GetDirectoryName(currentIconPath)!, "phone-bridge-*.ico"))
+        {
+            if (!string.Equals(iconPath, currentIconPath, StringComparison.OrdinalIgnoreCase))
+                File.Delete(iconPath);
+        }
+    }
+
+    private void RegisterUninstaller(string applicationPath, string iconPath)
     {
         var uninstallerPath = Path.Combine(_installDirectory, "uninstall.ps1");
         var powershellPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
@@ -213,7 +234,7 @@ internal sealed class SetupForm : Form
         key.SetValue("DisplayVersion", InstallerVersion);
         key.SetValue("Publisher", "floofyfox");
         key.SetValue("InstallLocation", _installDirectory);
-        key.SetValue("DisplayIcon", applicationPath);
+        key.SetValue("DisplayIcon", iconPath);
         key.SetValue("UninstallString", uninstallCommand);
         key.SetValue("NoModify", 1, RegistryValueKind.DWord);
         key.SetValue("NoRepair", 1, RegistryValueKind.DWord);

@@ -13,6 +13,7 @@
   <ItemGroup>
     <EmbeddedResource Include="$(AppPayloadPath)" LogicalName="IPhoneBridge.Setup.Payload.IPhoneBridge.Windows.exe" />
     <EmbeddedResource Include="$(AppNoticesPath)" LogicalName="IPhoneBridge.Setup.Payload.third-party-notices.txt" />
+    <EmbeddedResource Include="..\..\IPhoneBridge.Windows\Assets\phone-bridge.ico" LogicalName="IPhoneBridge.Setup.Payload.phone-bridge.ico" />
     <EmbeddedResource Include="..\uninstall.ps1" LogicalName="IPhoneBridge.Setup.Payload.uninstall.ps1" />
   </ItemGroup>
 
