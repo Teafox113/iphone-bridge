@@ -12,28 +12,9 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $appProject = Join-Path $projectRoot 'IPhoneBridge.Windows\IPhoneBridge.Windows.csproj'
 $setupProject = Join-Path $PSScriptRoot 'IPhoneBridge.Setup\IPhoneBridge.Setup.csproj'
 $workRoot = Join-Path $projectRoot '.installer-work'
-$appPublishDirectory = Join-Path $workRoot 'app-publish'
-$setupPublishDirectory = Join-Path $workRoot 'setup-publish'
 $releaseDirectory = Join-Path $projectRoot 'release'
-$installerPath = Join-Path $releaseDirectory 'IPhoneBridge-Setup-x64.exe'
 
-New-Item -ItemType Directory -Force -Path $appPublishDirectory, $setupPublishDirectory, $releaseDirectory | Out-Null
-
-& $dotnetExe publish $appProject -c Release -r win-x64 --self-contained true `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:EnableCompressionInSingleFile=true `
-    -p:DebugType=None `
-    -p:DebugSymbols=false `
-    -o $appPublishDirectory
-if ($LASTEXITCODE -ne 0) {
-    throw 'The Windows application publish failed; the installer was not generated.'
-}
-
-$appPayloadPath = Join-Path $appPublishDirectory 'IPhoneBridge.Windows.exe'
-if (-not (Test-Path -LiteralPath $appPayloadPath -PathType Leaf)) {
-    throw "Required publish output was not found: $appPayloadPath"
-}
+New-Item -ItemType Directory -Force -Path $workRoot, $releaseDirectory | Out-Null
 
 $noticeOutputPath = Join-Path $workRoot 'THIRD-PARTY-NOTICES.txt'
 $nugetRoots = @(
@@ -77,25 +58,62 @@ foreach ($packageName in $legalPackages) {
 }
 [System.IO.File]::WriteAllText($noticeOutputPath, ($noticeSections -join [Environment]::NewLine), [System.Text.Encoding]::UTF8)
 
-& $dotnetExe publish $setupProject -c Release -r win-x64 --self-contained true `
-    "-p:AppPayloadPath=$appPayloadPath" `
-    "-p:AppNoticesPath=$noticeOutputPath" `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:EnableCompressionInSingleFile=true `
-    -p:DebugType=None `
-    -p:DebugSymbols=false `
-    -o $setupPublishDirectory
-if ($LASTEXITCODE -ne 0) {
-    throw 'The setup application publish failed; the installer was not generated.'
+function Publish-InstallerVariant {
+    param(
+        [Parameter(Mandatory)] [string] $Variant,
+        [Parameter(Mandatory)] [bool] $SelfContained,
+        [Parameter(Mandatory)] [string] $RuntimeRequirement,
+        [Parameter(Mandatory)] [string] $InstallerFileName
+    )
+
+    $appPublishDirectory = Join-Path $workRoot "app-$Variant"
+    $setupPublishDirectory = Join-Path $workRoot "setup-$Variant"
+    $runtimeRequirementPath = Join-Path $workRoot "runtime-requirement-$Variant.txt"
+    $appPayloadPath = Join-Path $appPublishDirectory 'IPhoneBridge.Windows.exe'
+    $installerPath = Join-Path $releaseDirectory $InstallerFileName
+    New-Item -ItemType Directory -Force -Path $appPublishDirectory, $setupPublishDirectory | Out-Null
+    [System.IO.File]::WriteAllText($runtimeRequirementPath, $RuntimeRequirement, [System.Text.Encoding]::UTF8)
+
+    & $dotnetExe publish $appProject -c Release -r win-x64 "-p:SelfContained=$($SelfContained.ToString().ToLowerInvariant())" `
+        -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
+        "-p:EnableCompressionInSingleFile=$($SelfContained.ToString().ToLowerInvariant())" `
+        -p:DebugType=None `
+        -p:DebugSymbols=false `
+        -o $appPublishDirectory
+    if ($LASTEXITCODE -ne 0) {
+        throw "The $Variant Windows application publish failed; this installer was not generated."
+    }
+    if (-not (Test-Path -LiteralPath $appPayloadPath -PathType Leaf)) {
+        throw "Required $Variant application payload was not found: $appPayloadPath"
+    }
+
+    & $dotnetExe publish $setupProject -c Release -r win-x64 --self-contained true `
+        "-p:AppPayloadPath=$appPayloadPath" `
+        "-p:AppNoticesPath=$noticeOutputPath" `
+        "-p:RuntimeRequirementPath=$runtimeRequirementPath" `
+        -p:PublishSingleFile=true `
+        -p:IncludeNativeLibrariesForSelfExtract=true `
+        -p:EnableCompressionInSingleFile=true `
+        -p:DebugType=None `
+        -p:DebugSymbols=false `
+        -o $setupPublishDirectory
+    if ($LASTEXITCODE -ne 0) {
+        throw "The $Variant setup application publish failed; this installer was not generated."
+    }
+
+    $setupExe = Join-Path $setupPublishDirectory 'IPhoneBridge.Setup.exe'
+    if (-not (Test-Path -LiteralPath $setupExe -PathType Leaf)) {
+        throw "Required $Variant setup output was not found: $setupExe"
+    }
+
+    Copy-Item -LiteralPath $setupExe -Destination $installerPath -Force
+    $installer = Get-Item -LiteralPath $installerPath
+    $appPayload = Get-Item -LiteralPath $appPayloadPath
+    Write-Output "$Variant app: $([Math]::Round($appPayload.Length / 1MB, 1)) MB"
+    Write-Output "$Variant installer: $($installer.FullName)"
+    Write-Output "$Variant installer size: $([Math]::Round($installer.Length / 1MB, 1)) MB"
 }
 
-$setupExe = Join-Path $setupPublishDirectory 'IPhoneBridge.Setup.exe'
-if (-not (Test-Path -LiteralPath $setupExe -PathType Leaf)) {
-    throw "Required setup output was not found: $setupExe"
-}
-
-Copy-Item -LiteralPath $setupExe -Destination $installerPath -Force
-$installer = Get-Item -LiteralPath $installerPath
-Write-Output "Installer: $($installer.FullName)"
-Write-Output "Size: $([Math]::Round($installer.Length / 1MB, 1)) MB"
+Publish-InstallerVariant -Variant 'full' -SelfContained $true -RuntimeRequirement 'self-contained' -InstallerFileName 'IPhoneBridge-Setup-x64.exe'
+Publish-InstallerVariant -Variant 'light' -SelfContained $false -RuntimeRequirement 'framework-dependent' -InstallerFileName 'IPhoneBridge-Setup-x64-Light.exe'

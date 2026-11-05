@@ -6,11 +6,11 @@
 
 ## 下載與安裝
 
-**一般使用者不需要建置專案，也不需要另外安裝 .NET。**
+提供完整免依賴版與輕量版兩種安裝檔；一般使用者不需要建置專案。
 
-1. 前往 [下載最新版 Windows x64 安裝檔](https://github.com/Teafox113/iphone-bridge/releases/latest/download/IPhoneBridge-Setup-x64.exe)。
-2. 下載後執行 `IPhoneBridge-Setup-x64.exe`，依照安裝程式完成安裝。
-3. 從 Windows「開始」功能表開啟 **iPhone Bridge**。
+1. **完整免依賴版**：[下載 Windows x64 安裝檔](https://github.com/Teafox113/iphone-bridge/releases/latest/download/IPhoneBridge-Setup-x64.exe)。不需要預先安裝 .NET，檔案較大。
+2. **輕量版**：[下載 Windows x64 輕量安裝檔](https://github.com/Teafox113/iphone-bridge/releases/latest/download/IPhoneBridge-Setup-x64-Light.exe)。安裝程式會先檢查 .NET 10；若缺少，會指引安裝 .NET Desktop Runtime 與 ASP.NET Core Runtime（x64）。
+3. 下載後執行安裝檔，依照畫面完成安裝，再從 Windows「開始」功能表開啟 **iPhone Bridge**。
 
 安裝程式會安裝到目前 Windows 帳號，並建立開始功能表捷徑與解除安裝項目。程式目前提供 Windows x64 版本。
 
@@ -66,13 +66,13 @@
 
 需要 Windows 電腦與 .NET 10 SDK。一般使用者請依照上方「下載與安裝」取得安裝程式。
 
-在專案根目錄開啟 PowerShell，建置單一下載安裝檔：
+在專案根目錄開啟 PowerShell，同步建置完整免依賴版與輕量版安裝檔：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\packaging\build-installer.ps1
 ```
 
-建置完成後會產生 `release\IPhoneBridge-Setup-x64.exe`。安裝程式會安裝到目前 Windows 帳號的應用程式資料夾並建立開始功能表捷徑。
+建置完成後會在 `release` 資料夾產生 `IPhoneBridge-Setup-x64.exe` 與 `IPhoneBridge-Setup-x64-Light.exe`。兩種安裝程式都會安裝到目前 Windows 帳號的應用程式資料夾並建立開始功能表捷徑。
 
 ## 技術架構
 
