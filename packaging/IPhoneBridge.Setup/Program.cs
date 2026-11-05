@@ -18,7 +18,7 @@ internal static class Program
 
 internal sealed class SetupForm : Form
 {
-    private const string InstallerVersion = "0.1.4";
+    private const string InstallerVersion = "0.1.5";
     private const string AppResourceName = "IPhoneBridge.Setup.Payload.IPhoneBridge.Windows.exe";
     private const string NoticesResourceName = "IPhoneBridge.Setup.Payload.third-party-notices.txt";
     private const string IconResourceName = "IPhoneBridge.Setup.Payload.phone-bridge.ico";
